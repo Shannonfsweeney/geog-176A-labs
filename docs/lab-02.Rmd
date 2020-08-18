@@ -1,0 +1,173 @@
+---
+title: "Geography 176A"
+author: "[Shannon Sweeney]https://github.com/Shannonfsweeney"
+subtitle: 'Lab 03: COVID-19 Pandemic'
+output:
+  html_document: html_document
+  theme: journal
+---
+install.packages("tidyverse")
+library("tidyverse")
+install.packages("knitr")
+install.packages("readxl")
+install.packages("zoo")
+install.packages("dplyr")
+library(zoo)
+install.packages("magrittr")
+```{r load-packages, include=FALSE}
+library(dplyr)
+library(magrittr)
+library(knitr)
+```
+### Question 1 
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
+raw_covid_data = read_csv(url)
+```
+```{r}
+question1 = (raw_covid_data %>% 
+  select(date, fips ,county, state, cases) %>% 
+  filter(state == 'California') %>% 
+  group_by(state) %>% 
+  mutate(daily_cases = cases - lag(cases, default = 0)) %>% 
+  ungroup())
+```
+### Cumulative California Cases
+```{r}
+cum_cases = (question1 %>% 
+  select(date,fips, county, cases) %>% 
+  filter(date == max(date)) %>%
+  arrange(-(cases)) %>% 
+  head(5))
+```
+
+
+
+### California Counties table
+```{r}
+knitr::kable(cum_cases, caption = "California Counties with the most COVID-19 cases" )
+```
+
+
+
+### code for second half of question  1
+```{r}
+pt2question1 = (raw_covid_data %>% 
+  select(date, state, county, fips, cases) %>% 
+  filter(state == 'California') %>%
+  filter(date >= ('2020-08-02')) %>% 
+  group_by(county)) %>% 
+  mutate(total_cases=max(cases)-min(cases)) %>%
+  arrange(-(total_cases)) %>% 
+  select(date, county, total_cases, fips) %>% 
+   filter(date == max(date)) %>% 
+  head(5)
+```
+```{r}
+pt2question1 %>% 
+ filter(date == max(date)) %>% 
+  head(5)
+```
+```{r}
+knitr::kable(pt2question1, caption = "California Counties with the most COVID-19 cases within the  past 14 days" )
+```
+```{r}
+library(readr)
+landdata_states <- read_csv("../data/landdata-states.csv")
+```
+```{r}
+library(readxl)
+PopulationEstimates <- read_excel("../data/PopulationEstimates.xls", 
+    skip = 2)
+```
+```{r}
+p1 = PopulationEstimates %>%
+  select(fips = "FIPStxt",state = "State", pop2019 = "POP_ESTIMATE_2019") %>%
+  filter(state == "CA") 
+```
+
+```{r}
+popcases = cum_cases %>% full_join(p1) 
+```
+```{r}
+percapita_cumcases = (popcases %>% 
+  head(5) %>% 
+  mutate(per_capita_case_ratio = 100000* (cases/pop2019)))
+```
+###final table for question one 
+```{r}
+knitr::kable(percapita_cumcases, caption = " California Counties with the most cumulative cases of Covid, including cases per 100,000 people")
+```
+### All of California Couties with the most COVID-19 cases are in Southern California.
+```{r}
+table2data= (pt2question1 %>% full_join(p1))
+```
+```{r}
+fixedtable2data = table2data %>% 
+  mutate(per_capita_case_ratio = 100000* (total_cases/pop2019)) %>% 
+  head(5)
+```
+```{r}
+knitr::kable(fixedtable2data, caption = "COVID 19 cases per 100,000 people in the California Counties with the most cases in the last 14 days")
+```
+### All five of the Counties with the most COVID-19 cases in the past 2 weeks exceed the watchlist limit, 25 cases per 100,000 within the last 14 days.
+
+### Question 2
+### California
+```{r}
+California = raw_covid_data %>%
+  filter(state == 'California') %>%
+  group_by(date) %>%
+  summarise("State_Cases" = sum(cases)) %>% 
+  mutate(daily_cases = State_Cases - lag(State_Cases))
+```
+```{r}
+California %>% 
+ ggplot(aes(x = date)) +
+  geom_line(aes(y = daily_cases), col = "coral1", size = 1) 
+```
+###New York
+```{r}
+newYork = raw_covid_data %>%
+  filter(state == 'New York') %>%
+  group_by(date) %>%
+  summarise("State_Cases" = sum(cases)) %>% 
+  mutate(daily_cases = State_Cases - lag(State_Cases)) %>% 
+  select(date, daily_cases, State_Cases)
+```
+### I was having trouble getting the roll mean function to work.
+```{r}
+newYork %>% 
+ ggplot(aes(x = date)) +
+  geom_line(aes(y = daily_cases), col = "coral1", size = 1) 
+```
+
+### Louisiana
+```{r}
+Louisiana = raw_covid_data %>%
+  filter(state == 'Louisiana') %>%
+  group_by(date) %>%
+  summarise("State_Cases" = sum(cases)) %>% 
+  mutate(daily_cases = State_Cases - lag(State_Cases))
+```
+```{r}
+Louisiana %>% 
+ ggplot(aes(x = date)) +
+  geom_line(aes(y = daily_cases), col = "coral1", size = 1) 
+```
+### Florida
+```{r}
+Florida = raw_covid_data %>%
+  filter(state == 'Florida') %>%
+  group_by(date) %>%
+  summarise("State_Cases" = sum(cases)) %>% 
+  mutate(daily_cases = State_Cases - lag(State_Cases))
+```
+```{r}
+Florida %>% 
+ ggplot(aes(x = date)) +
+  geom_line(aes(y = daily_cases), col = "coral1", size = 1) 
+```
+
